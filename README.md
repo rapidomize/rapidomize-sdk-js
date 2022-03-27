@@ -1,42 +1,32 @@
 # Rapidomize Intelligent Connected Services (ICS) Client
 Javascript SDK for Rapidomize ICS platform (https://rapidomize.com)
 
-# Configuration
-
-1. Browser event collector
-
-```
-npm install
-npm run build
-```
-
-Installation
+# Installation
 rapidomize.js can be installed via npm. It is recommended to get rapidomize.js this way.
 
-# npm
 ```
 npm install rapidomize.js --save
 ```
 
 
-Integration
-rapidomize.js can be integrated with plain JavaScript or with different module loaders. 
-The examples below show how to load rapidomize.js in different systems.
+# Usage
+The examples below show how to load rapidomize.js in in your Webapp.
 
-# Script Tag
 ```
 <script src="path/to/rapidomizejs/dist/rapidomize.js"></script>
 <script>
     rapidomize.init('APP_ID', 'TOKEN');
+
+    /* refer to the example index.html file found in dist folder */
 </script>
 ```
 
+# Build
+Install latest version of npm and run:
 
-# Bundlers (Webpack, Rollup, etc.)
 ```
-import rapidomize from 'rapidomize.js';
-
-rapidomize.init('APP_ID', 'TOKEN');
+npm install
+npm run build
 ```
 
 # Status - preview
