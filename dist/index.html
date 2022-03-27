@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Page</title>
+    <script src="rapidomize.js"></script>
+</head>
+<body>
+    <h3>This page demonstrate how to use 'ICApp Trigger' and  WebApp event tracking via APIs ... </h3>
+    <div style="display: flex;flex-direction: column;margin-top: 30px;">
+        <h4>Trigger ICApp to send an email</h4>
+        <div style="display: flex;"> 
+            <input type="text" id="email" name="email" placeholder="Email address..." required>
+            <button id="mail">Send Mail</button>
+        </div>
+    </div>
+    <div style="display: flex;flex-direction: column;">
+        <h4 style="margin-top: 30px;">For Analytics purpose, track 'registration' click event</h4>
+        <div style="display: flex;">
+            <button id="register">Register</button>
+        </div>
+    </div>
+
+    <script>
+        /* initialize a the library with token & appId */
+        rapidomize.init(APP_ID, TOKEN);
+        
+        /* set a user session information for event tracking */
+        rapidomize.setSession('123qwe', 'user123');       
+        
+        /* track page access event */
+        window.onload = function() {
+
+            rapidomize.event('load', {
+                'pg': 'home'
+            }, ICAPP_ID);
+            localStorage.setItem("load", true);
+        };
+        
+        /* button click events */
+        document.addEventListener('DOMContentLoaded', function() { 
+
+            /* track user registration event */
+            document.getElementById('register').addEventListener('click', (e) => {
+                rapidomize.event('register', {
+                    'type': 'click',
+                    'wait': '160s'
+                }, ICAPP_ID);
+            });
+
+            /* fire a email on user request */
+            document.getElementById('mail').addEventListener('click', (e) => {
+                let email = document.getElementById('email');
+                if(email.value == ''){
+                    alert("Email is required!");
+                    return;
+                }
+                console.log('email', email.value);
+                rapidomize.trigger(ICAPP_ID, {
+                    to: email.value,  
+                    from: 'noreply@my-site.com',
+                    subject: 'Example Subject',
+                    body: 'Example Body'
+                });
+            });
+
+        }, false);
+    </script>
+</body>
+</html>
