@@ -1,27 +1,36 @@
 {
-  "name": "rapidomize",
+  "name": "@rapidomize/ics",
   "version": "0.7.5",
-  "description": "rapidomize client sdk",
+  "description": "Rapidomize sdk for javascript",
+  "private": true,
   "keywords": [
-    "rapidomize"
+    "rapidomize",
+    "database",
+    "functions",
+    "storage",
+    "authentication",
+    "microservice"
   ],
-  "author": "rapidomize",
+  "author": "Rapidomize <support@rapidomize.com>",
   "license": "Apache-2.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx webpack --config webpack.config.js"
+    "dev": "npx webpack --mode=development --config webpack.config.js",
+    "build": "npx webpack --config webpack.config.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rapidomize/sdk.git"
+    "url": "https://github.com/rapidomize/rapidomize-sdk-js.git"
   },
   "main": "dist/rapidomize.js",
+  "dependencies": {},
   "devDependencies": {
-    "webpack": "^5.70.0",
-    "webpack-cli": "^4.9.2"
+    "nodemon": "^2.0.16",
+    "webpack": "^4.46.0",
+    "webpack-cli": "^3.3.12"
   },
   "bugs": {
-    "url": "https://github.com/rapidomize/sdk/issues"
+    "url": "https://github.com/rapidomize/rapidomize-sdk-js/issues"
   },
-  "homepage": "https://github.com/rapidomize/sdk#readme"
+  "homepage": "https://rapidomize.com/"
 }

@@ -6,7 +6,7 @@
  *
  * OR contact:
  * contact@rapidomize.com
- * +1 650 603 0899
+ * 
  *
  * Unless required by applicable law or agreed to in writing, software distributed under the License
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
@@ -14,22 +14,25 @@
  * the License.
  */
 
-const EP_URI='https://intcon.rapidomize.com/api/v1/mo';
 
-let httpReq = null;
-let baseUri = null;
-let qparams = null;
-let _icappId = null;
+
+const EP_HOST='ics.rapidomize.com';
+const APP_PATH='/api/v1/mo/'
+const AGW_PATH='/api/v1/agw/'
+
+let _icappId;
 let _options = {};
+let _basePath;
+let _store;
+
 
 /**
- * Initialize rapidomize
- * token based authentication for browser
+ * Initialize rapidomize and creates a client to remotely interact with Rapidomize server/cloud platform. 
  * 
- * @param {String} appId - App ID
- * @param {String} token - Token for the App
+ * @param {String} appId   App/Device ID
+ * @param {String} token   App/Device Token
  * @param {String} icappId (optional) ICApp ID to use in event tracking for analytics against a given ICApp
- * @param {Object} options additional options 
+ * @param {Object} options (optional) additional options 
  *                         {
  *                          'session': true  => include session data for all ICApp triggers
  *                         }
@@ -37,43 +40,68 @@ let _options = {};
  * 
  */
 function init(appId, token, icappId = null, options = null) {
-    if(!appId || appId.length > 60) {
-        console.warn('Failed to initialize rapidomize!! - invalid App ID');
+    if(!appId || appId.length > 60 || !token || !EP_HOST || !APP_PATH || !AGW_PATH) {
+        console.warn('Failed to initialize rapidomize!!');
         return;
     }
-    if(!token) {
-        console.warn('Failed to initialize rapidomize!! - invalid param');
-        return;
-    }
-    qparams = `token=${encodeURIComponent(token)}`;
-    baseUri = `${EP_URI}/${appId}`;
+
+    _appId = appId;
     _icappId = icappId;
     _options =  Object.assign(_options, options);
-    
-    httpReq = new XMLHttpRequest();
 
-    httpReq.onload = function(event) {
-        var text = httpReq.responseText;
-        // console.log('');
-    };
-    
-    httpReq.onerror = function(event) {
-        console.log('rapidomize', event);
-    }; 
+    _hdr(token);
+
+    _basePath = `${APP_PATH}${appId}`;
+
+    if(typeof window === 'undefined')
+        _store = new Map();
 }
 
+/**
+ * If you are expecting response from your ICApp then you must provide a callback handler to receive response.
+ * 
+ * Default callback handler.
+ * 
+ */
+ let LifeCycleHandler = {
+    /**
+     * Receive response from the server/cloud platform.  
+     * 
+     * @param {Object} res response data
+     */
+    ack: (res)=>{},
+
+    /**
+     * if in case of an error. Error msg err description is found under err attribute
+     * e.g. {err: 'reason ..', status:'status text'}
+     * 
+     * @param {Object} err in case of error
+     */
+    err: (err) => {}
+};
+
+const HttpMethod = {
+    GET:'GET',
+    POST:'POST',
+    PUT:'PUT',
+    PATCH:'PATCH',
+    DELETE: 'DELETE'
+}
 
 /**
- * Execute ICApp having 'my-app' or 'webhook' and receive inbound data (as JSON) for ICApp processing.
- * 
+ * Trigger an ICApp with input JSON data
+ *
  * @param {String} icappId ICApp ID
  * @param {Object} data inbound data for the ICApp, is either a object or an array of objects. 
  *                      For bulk operations you can send data as an array of objects. ICApp will be triggered for each object in the array.
- * 
- * @return none
+ * @param {LifeCycleHandler} handler callback handler see above
  */
- function trigger(icappId, data){
-    if(!baseUri || !qparams) return;
+ function trigger(icappId, data, handler = LifeCycleHandler){
+    if(!_basePath)  {
+        console.error('Rapidomize is not initialized!');
+        return;
+    }
+    
 
     icappId = icappId? icappId: _icappId;
     if(!icappId || icappId.length > 60 || !data) {
@@ -92,8 +120,57 @@ function init(appId, token, icappId = null, options = null) {
         reqdata = Object.assign(data, session);
     }
 
-    _send(icappId, reqdata);
+    const path = `${_basePath}/icapp/${icappId}`;
+
+    _send(HttpMethod.POST, path, reqdata, handler);
 }
+
+/**
+ * Convenient method to invoke user defined GET REST API
+ * 
+ * @param {String} path 
+ * @param {LifeCycleHandler} handler callback handler see above
+ */
+function get(path, icappId=null, handler=null){
+    _send(HttpMethod.GET, _gwpath(path, icappId), null, handler);
+}
+
+/**
+ * Convenient method to invoke user defined POST REST API
+ * 
+ * @param {String} path 
+ * @param {Object} data inbound data for the ICApp, is either a object or an array of objects. 
+ *                      For bulk operations you can send data as an array of objects. ICApp will be triggered for each object in the array.
+ * @param {LifeCycleHandler} handler callback handler see above
+ */
+function post(path, data, handler=null){
+    _send(HttpMethod.POST, _gwpath(path, icappId), data, handler);
+}
+
+/**
+ * Convenient method to invoke user defined PUT REST API
+ * 
+ * @param {String} path 
+ * @param {Object} data inbound data for the ICApp, is either a object or an array of objects. 
+ *                      For bulk operations you can send data as an array of objects. ICApp will be triggered for each object in the array.
+ * @param {LifeCycleHandler} handler callback handler see above
+ */
+function put(path, data, handler=null){
+    _send(HttpMethod.PUT, _gwpath(path, icappId), data, handler);
+}
+
+/**
+ * Convenient method to invoke user defined DELETE REST API
+ * 
+ * @param {String} path 
+ * @param {Object} data inbound data for the ICApp, is either a object or an array of objects. 
+ *                      For bulk operations you can send data as an array of objects. ICApp will be triggered for each object in the array.
+ * @param {LifeCycleHandler} handler callback handler see above
+ */
+function del(path, data, handler=null){
+    _send(HttpMethod.DELETE, _gwpath(path, icappId), data, handler);
+}
+
 
 /**
  * Setup session data for event tracking for analytics
@@ -102,21 +179,22 @@ function init(appId, token, icappId = null, options = null) {
  * @param {String} userId - (optional) anonymous user ID for event tracking for analytics
  * @param {Object} userProps - (optional) other use properties to be included
  */
- function setSession(sessionId, userId = null, userProps = null) {
-    var session = {'sessionId': sessionId};
+function setSession(sessionId, userId = null, userProps = null) {
+    let session = {'sessionId': sessionId};
 
     if (userId) session.userId = userId;
     if (userProps) session.userProps = userProps;
 
-    localStorage.setItem("rapidomize-session", JSON.stringify(session));
+    _setItem("rapidomize-session", JSON.stringify(session));
 }
 
 /**
  * clear session data
  */
 function clearSession() {
-    localStorage.removeItem("rapidomize-session");
+    _removeItem("rapidomize-session");
 }
+
 
 /**
  * For analytics purpose, track webapp user events such as button clicks and send event data to your ICApp for analysis.
@@ -129,7 +207,7 @@ function clearSession() {
  * @return none
  */
  function event(eventName, properties = null, icappId = null) {
-    if(!baseUri || !qparams) return;
+    if(!_basePath) return;
 
     icappId = icappId? icappId: _icappId;
 
@@ -148,47 +226,118 @@ function clearSession() {
     }
 
     const reqdata = Object.assign(data, session);
-    _send(icappId, reqdata, true);
+    let path = `${_basePath}/icapp/${icappId}/event`;
+    _send(HttpMethod.POST, path, reqdata);
 }
+
+let _headers;
+
+function _hdr(token){
+    _headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/plain;q=0.9',
+        'Connection': 'keep-alive',
+        'Authorization': `Basic ${Buffer.from(`:${token}`).toString('base64')}`
+    }
+}
+
+function _gwpath(path, icappId){
+    icappId = icappId? icappId: _icappId;
+    if(!icappId || icappId.length > 60) {
+        console.log('Invalid icappId!');
+        return;
+    }
+
+    return `${AGW_PATH}/${icappId}/${path}`;
+}
+
+const _https = require('https');
 
 /**
  * internal function to send HTTP request
  * 
  * @param {String} icappId 
- * @param {*} data 
- * @param {*} ev 
+ * @param {Object} data 
+ * @param {boolean} ev 
  * 
  * @returns 
  */
-function _send(icappId, data, ev){
-    let URI = `${baseUri}/icapp/${icappId}${ev?'/events':''}?${qparams}`
-    // console.log('uri', URI, data);
+function _send(method, path, data, handler=null){
+    // console.log('uri', uri, headers, data);
 
-    httpReq.open('POST', URI);
-    httpReq.setRequestHeader('Content-Type', 'application/json');
-    return httpReq.send(JSON.stringify(data));
-}
-
-/*
-{
-    if (navigator.sendBeacon) { 
-        //on unload send the last event
-        window.addEventListener("unload", function lstEv() {
-            navigator.sendBeacon(`${baseUri}/event?${baseParams}`, data);
-        });
+    let headers;
+    if(method != HttpMethod.GET && data){
+        data = JSON.stringify(data);
+        headers = {..._headers, ...{'Content-Length': Buffer.byteLength(data)}};
     }
-}
-*/
+      
+    const req = _https.request({
+        protocol: 'https:',
+        hostname: EP_HOST,
+        port: 443,
+        path: path,
+        method: method,
+        headers: headers
+      }, (res) => {
+        const cnt = res.headers['content-type'];
+        const status = res.statusCode;
+        console.log('Content-Type',cnt);
+        console.log('status', status, res.statusMessage);
+        
+        let _data = [];
+        req.on('data', (chunk) => {
+            _data.push(chunk)
+        });
 
+        req.on('end', () => {
+            _data = (cnt == 'application/json')? JSON.parse(_data): _data;
+            console.log('body: ', _data);
+            
+            if(handler){
+                if (status >= 200 && status < 300) {
+                    handler.ack(_data);
+                } else {
+                    handler.err((cnt == 'application/json')? error.err: {err: err, status: res.statusMessage});
+                }
+            }
+        });
+    });
+    
+    req.on('error', error => {
+        console.error(error);
+    });
+    
+    if(data)
+        req.write(data);
+    req.end();
+}
+    
 function _getSession() {
-    var ses = localStorage.getItem("rapidomize-session")
+    let ses = _getItem("rapidomize-session")
     return ses ? JSON.parse(ses):null;
+}
+
+function _getItem(key){
+    return (typeof window === 'undefined')? _store.get(key): localStorage.getItem(key) ;
+}
+
+function _setItem(key, value){
+    return (typeof window === 'undefined')? _store.set(key, value): localStorage.setItem(key, value) ;
+}
+
+function _removeItem(key){
+    return (typeof window === 'undefined')? _store.delete(key): localStorage.removeItem(key) ;
 }
 
 module.exports = {
     init,
-    event,
     trigger,
+    event,
     setSession,
-    clearSession
+    clearSession,
+    get,
+    post,
+    put,
+    del,
+    LifeCycleHandler
 }
