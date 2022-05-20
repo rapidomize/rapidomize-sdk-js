@@ -17,13 +17,14 @@
 
 
 const EP_HOST='ics.rapidomize.com';
-const APP_PATH='/api/v1/mo/'
-const AGW_PATH='/api/v1/agw/'
+const APP_PATH='/api/v1/mo/';
+const AGW_PATH='/api/v1/agw/';
 
 let _icappId;
 let _options = {};
 let _basePath;
 let _store;
+let _nde=false;
 
 
 /**
@@ -53,8 +54,10 @@ function init(appId, token, icappId = null, options = null) {
 
     _basePath = `${APP_PATH}${appId}`;
 
-    if(typeof window === 'undefined')
+    if(typeof window === 'undefined'){
+        _nde = true;
         _store = new Map();
+    }
 }
 
 /**
@@ -98,10 +101,8 @@ const HttpMethod = {
  */
  function trigger(icappId, data, handler = LifeCycleHandler){
     if(!_basePath)  {
-        console.error('Rapidomize is not initialized!');
-        return;
+        return _err('Rapidomize is not initialized!');
     }
-    
 
     icappId = icappId? icappId: _icappId;
     if(!icappId || icappId.length > 60 || !data) {
@@ -132,7 +133,9 @@ const HttpMethod = {
  * @param {LifeCycleHandler} handler callback handler see above
  */
 function get(path, icappId=null, handler=null){
-    _send(HttpMethod.GET, _gwpath(path, icappId), null, handler);
+    let gwpath = _gwpath(path, icappId);
+    if(!gwpath) return;
+    _send(HttpMethod.GET, gwpath, null, handler);
 }
 
 /**
@@ -143,8 +146,10 @@ function get(path, icappId=null, handler=null){
  *                      For bulk operations you can send data as an array of objects. ICApp will be triggered for each object in the array.
  * @param {LifeCycleHandler} handler callback handler see above
  */
-function post(path, data, handler=null){
-    _send(HttpMethod.POST, _gwpath(path, icappId), data, handler);
+function post(path, data, icappId=null, handler=null){
+    let gwpath = _gwpath(path, icappId);
+    if(!gwpath) return;
+    _send(HttpMethod.POST, gwpath, data, handler);
 }
 
 /**
@@ -155,8 +160,10 @@ function post(path, data, handler=null){
  *                      For bulk operations you can send data as an array of objects. ICApp will be triggered for each object in the array.
  * @param {LifeCycleHandler} handler callback handler see above
  */
-function put(path, data, handler=null){
-    _send(HttpMethod.PUT, _gwpath(path, icappId), data, handler);
+function put(path, data, icappId=null, handler=null){
+    let gwpath = _gwpath(path, icappId);
+    if(!gwpath) return;
+    _send(HttpMethod.PUT, gwpath, data, handler);
 }
 
 /**
@@ -167,8 +174,10 @@ function put(path, data, handler=null){
  *                      For bulk operations you can send data as an array of objects. ICApp will be triggered for each object in the array.
  * @param {LifeCycleHandler} handler callback handler see above
  */
-function del(path, data, handler=null){
-    _send(HttpMethod.DELETE, _gwpath(path, icappId), data, handler);
+function del(path, data, icappId=null, handler=null){
+    let gwpath = _gwpath(path, icappId);
+    if(!gwpath) return;
+    _send(HttpMethod.DELETE, gwpath, data, handler);
 }
 
 
@@ -242,13 +251,19 @@ function _hdr(token){
 }
 
 function _gwpath(path, icappId){
-    icappId = icappId? icappId: _icappId;
-    if(!icappId || icappId.length > 60) {
-        console.log('Invalid icappId!');
-        return;
+    if(!_basePath)  {
+        return _err('Rapidomize is not initialized!');
+    }
+    if(!path || typeof path != 'string' || path.length > 2048){
+        return _err('invalid request uri/path');
     }
 
-    return `${AGW_PATH}/${icappId}/${path}`;
+    icappId = icappId? icappId: _icappId;
+    if(!icappId || typeof icappId != 'string' || icappId.length > 60) {
+        return _err('Invalid icappId!');
+    }
+
+    return `${AGW_PATH}${icappId}/${path}`;
 }
 
 const _https = require('https');
@@ -263,13 +278,13 @@ const _https = require('https');
  * @returns 
  */
 function _send(method, path, data, handler=null){
-    // console.log('uri', uri, headers, data);
-
-    let headers;
+    let headers = _headers;
     if(method != HttpMethod.GET && data){
         data = JSON.stringify(data);
         headers = {..._headers, ...{'Content-Length': Buffer.byteLength(data)}};
     }
+
+    console.log('uri', method, path, headers, data);
       
     const req = _https.request({
         protocol: 'https:',
@@ -279,25 +294,38 @@ function _send(method, path, data, handler=null){
         method: method,
         headers: headers
       }, (res) => {
-        const cnt = res.headers['content-type'];
+        let cnt = res.headers['content-type'];
         const status = res.statusCode;
         console.log('Content-Type',cnt);
         console.log('status', status, res.statusMessage);
         
         let _data = [];
-        req.on('data', (chunk) => {
+        res.on('data', (chunk) => {
             _data.push(chunk)
         });
 
-        req.on('end', () => {
-            _data = (cnt == 'application/json')? JSON.parse(_data): _data;
+        res.on('end', () => {
+            _data = Buffer.concat(_data);
+            let loc = cnt.indexOf(';');
+            if(loc > 0) cnt = cnt.substring(0, loc);
+            switch(cnt){
+                case 'text/plain': _data = _data.toString(); break;
+                case 'application/json': _data = JSON.parse(_data.toString()); break;
+            }
             console.log('body: ', _data);
             
             if(handler){
                 if (status >= 200 && status < 300) {
                     handler.ack(_data);
+                    return;
                 } else {
-                    handler.err((cnt == 'application/json')? error.err: {err: err, status: res.statusMessage});
+                    let err;
+                    if(cnt == 'application/json'){
+                        if(Object.keys(_data).length > 0 && _data.err)
+                            err = _data.err;
+                        else err = res.statusMessage;
+                    }else err = _data;
+                    handler.err({err: err, status: status});
                 }
             }
         });
@@ -327,6 +355,14 @@ function _setItem(key, value){
 
 function _removeItem(key){
     return (typeof window === 'undefined')? _store.delete(key): localStorage.removeItem(key) ;
+}
+
+function _err(msg){
+    if(_nde) throw new Error(msg);
+    else {
+        console.log(msg);
+        return false;
+    }
 }
 
 module.exports = {

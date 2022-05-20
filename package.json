@@ -9,6 +9,9 @@
     "functions",
     "storage",
     "authentication",
+    "lowcode",
+    "nocode",
+    "nocodeapi",
     "microservice"
   ],
   "author": "Rapidomize <support@rapidomize.com>",
