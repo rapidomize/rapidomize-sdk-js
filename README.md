@@ -23,7 +23,7 @@ The examples below show how to load rapidomize.js in different systems.
 </script>
 ```
 
-For example see `sample/web/index.html`
+For example see [samples/web/index.html](samples/web/index.html)
 
 
 ## Bundlers (Webpack, Rollup, etc.)
@@ -35,7 +35,7 @@ rapidomize.init('APP_ID', 'TOKEN');
 
 ```
 
-For example see `sample/node/test.js`
+For example see [samples/node/test.js](samples/node/test.js)
 
 
 # Building the SDK
