@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022, Rapidomize.
+ * Copyright (c) 2018-2024, Rapidomize.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -17,12 +17,14 @@
 
 
 const EP_HOST='ics.rapidomize.com';
-const APP_PATH='/api/v1/mo/';
-const AGW_PATH='/api/v1/agw/';
+// const EP_HOST='localhost'; //for dev testing
 
+const VERSION='v1';
+const BASE_PATH=`/api/${VERSION}`;
+
+let _appId;
 let _icappId;
 let _options = {};
-let _basePath;
 let _store;
 let _nde=false;
 
@@ -30,8 +32,8 @@ let _nde=false;
 /**
  * Initialize rapidomize and creates a client to remotely interact with Rapidomize server/cloud platform. 
  * 
- * @param {String} appId   App/Device ID
- * @param {String} token   App/Device Token
+ * @param {String} appId   App/Device ID obtained from App/Device definition.
+ * @param {String} token   App/Device Token obtained from App/Device definition 'API Authorizations' tab.
  * @param {String} icappId (optional) ICApp ID to use in event tracking for analytics against a given ICApp
  * @param {Object} options (optional) additional options 
  *                         {
@@ -40,19 +42,17 @@ let _nde=false;
  * 
  * 
  */
-function init(appId, token, icappId = null, options = null) {
-    if(!appId || appId.length > 60 || !token || !EP_HOST || !APP_PATH || !AGW_PATH) {
+function init(appId, token,  icappId = null, options = null) {
+    if(!appId || appId.length > 60 || !token || !EP_HOST || !BASE_PATH) {
         console.warn('Failed to initialize rapidomize!!');
         return;
     }
 
-    _appId = appId;
+    _appId = appId; //NoP for the time being
     _icappId = icappId;
     _options =  Object.assign(_options, options);
 
     _hdr(token);
-
-    _basePath = `${APP_PATH}${appId}`;
 
     if(typeof window === 'undefined'){
         _nde = true;
@@ -91,6 +91,10 @@ const HttpMethod = {
     DELETE: 'DELETE'
 }
 
+
+const ICAPP_PATH=`${BASE_PATH}/icapp`;
+
+
 /**
  * Trigger an ICApp with input JSON data
  *
@@ -100,7 +104,7 @@ const HttpMethod = {
  * @param {LifeCycleHandler} handler callback handler see above
  */
  function trigger(icappId, data, handler = LifeCycleHandler){
-    if(!_basePath)  {
+    if(!_appId)  {
         return _err('Rapidomize is not initialized!');
     }
 
@@ -121,7 +125,7 @@ const HttpMethod = {
         reqdata = Object.assign(data, session);
     }
 
-    const path = `${_basePath}/icapp/${icappId}`;
+    const path = `${ICAPP_PATH}/${icappId}`;
 
     _send(HttpMethod.POST, path, reqdata, handler);
 }
@@ -216,7 +220,9 @@ function clearSession() {
  * @return none
  */
  function event(eventName, properties = null, icappId = null) {
-    if(!_basePath) return;
+    if(!_appId)  {
+        return _err('Rapidomize is not initialized!');
+    }
 
     icappId = icappId? icappId: _icappId;
 
@@ -225,7 +231,7 @@ function clearSession() {
         return;
     }
 
-    let ev = {'n': eventName};
+    let ev = {'_evt': eventName};
     let data = properties? Object.assign(ev, properties): ev;
 
     const session = _getSession();
@@ -235,7 +241,7 @@ function clearSession() {
     }
 
     const reqdata = Object.assign(data, session);
-    let path = `${_basePath}/icapp/${icappId}/event`;
+    let path = `${ICAPP_PATH}/${icappId}/event`;
     _send(HttpMethod.POST, path, reqdata);
 }
 
@@ -250,26 +256,28 @@ function _hdr(token){
     }
 }
 
+const API_GW_PATH=`${BASE_PATH}/agw/`;
+
 function _gwpath(path, icappId){
-    if(!_basePath)  {
+    if(!_appId)  {
         return _err('Rapidomize is not initialized!');
     }
-    if(!path || typeof path != 'string' || path.length > 2048){
+    if(!path || typeof path != 'string' || path.length == 0 || path.length > 2048){
         return _err('invalid request uri/path');
     }
 
     icappId = icappId? icappId: _icappId;
-    if(!icappId || typeof icappId != 'string' || icappId.length > 60) {
+    if(!icappId || typeof icappId != 'string' || icappId.length == 0 || icappId.length > 60) {
         return _err('Invalid icappId!');
     }
 
-    return `${AGW_PATH}${icappId}/${path}`;
+    return path.charAt(0)!='/'?`${API_GW_PATH}${icappId}/${path}`:`${API_GW_PATH}${icappId}${path}`;
 }
 
 const _https = require('https');
 
 /**
- * internal function to send HTTP request
+ * internal - send HTTP request
  * 
  * @param {String} icappId 
  * @param {Object} data 
@@ -306,11 +314,14 @@ function _send(method, path, data, handler=null){
 
         res.on('end', () => {
             _data = Buffer.concat(_data);
-            let loc = cnt.indexOf(';');
-            if(loc > 0) cnt = cnt.substring(0, loc);
-            switch(cnt){
-                case 'text/plain': _data = _data.toString(); break;
-                case 'application/json': _data = JSON.parse(_data.toString()); break;
+            if(cnt){
+                let loc = cnt.indexOf(';');
+                if(loc > 0) cnt = cnt.substring(0, loc);
+                switch(cnt){
+                    case 'text/plain': 
+                    case 'text/html': _data = Buffer.byteLength(_data)> 0 ?_data.toString():''; break;
+                    case 'application/json': _data = Buffer.byteLength(_data)> 0 ?JSON.parse(_data.toString()):undefined; break;
+                }
             }
             console.log('body: ', _data);
             
@@ -321,11 +332,11 @@ function _send(method, path, data, handler=null){
                 } else {
                     let err;
                     if(cnt == 'application/json'){
-                        if(Object.keys(_data).length > 0 && _data.err)
+                        if(_data && Object.keys(_data).length > 0 && _data.err)
                             err = _data.err;
                         else err = res.statusMessage;
                     }else err = _data;
-                    handler.err({err: err, status: status});
+                    handler.err({err: err, st: status, sm: res.statusMessage});
                 }
             }
         });

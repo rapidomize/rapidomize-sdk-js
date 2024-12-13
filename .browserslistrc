@@ -5,7 +5,7 @@
 #   npx browserslist
 
 #> 0.5%, last 2 versions, Firefox ESR, not dead
-#defaults
-last 2 years
+defaults
+#last 2 years
 not IE 11 
-maintained node versions
+#maintained node versions

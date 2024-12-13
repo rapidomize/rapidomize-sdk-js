@@ -1,0 +1,194 @@
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.css">
+<style>
+    body{
+  background-color:rgb(38,71,103);
+}
+
+#container{
+  display:flex;
+  justify-content:center;
+}
+
+#border{
+  border-radius:10px;
+  text-align:center;
+  margin:2em;
+  padding:10px;
+  background-color:rgb(237, 237, 237);
+  box-shadow: 7px 5px 15px rgb(61, 61, 61);
+}
+
+#description{
+  width:100%;
+  padding:5px;
+  margin:0px;
+}
+
+#formContain{
+  display: flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+#multi{
+  display: flex;
+  flex-direction:column;
+  justify-content:center;
+  margin-top: 15px;
+}
+
+.multi-button{
+  padding:10px 10px 0px 10px
+}
+
+input:invalid:not(:focus) {
+    outline: 1px solid #f00;
+}
+
+#survey-form, #radio {
+  display: flex;
+  flex-direction:column;
+}
+
+#number, #drop-down{
+  width:33%;
+}
+
+#name, #email, #tel, #number, #drop-down{
+  margin:2%;
+}
+
+.side{
+  display:inline-flex;
+}
+
+.red{
+  margin:5px;
+}
+
+#textarea{
+  display:flex;
+  flex-direction:column;
+}
+
+button{
+  margin-top:5%;
+  width:100%;
+  border-radius:4px;
+}
+</style>
+<div id="container">
+    <div id="border">
+      <h1 id="title">Customer Feedback Form</h1>
+      <br>
+      <div id="formContain">
+        <form action="javascript:;" id="survey-form">
+          <div id="textarea">
+            <lable>Your Email:</lable>
+            <textarea rows="1" cols="80" id="emailadd"></textarea>
+          </div>
+          <br>
+          <label for="radio">Overall, how satisfied are you with the resolution of your complaint/support request?</label>
+          <div>
+            <input class="radio-inline red" type="radio" name="1" value="Very Satisfied">Very Satisfied</label>
+            <input class="radio-inline red" type="radio" name="1" value="Satisfied">Satisfied</label>
+            <input class="radio-inline" type="radio"  name="1" value="Neutral">Neutral</label>
+            <input class="radio-inline" type="radio"  name="1" value="Dissatisfied">Dissatisfied</label>
+            <input class="radio-inline" type="radio" name="1" value="Very Dissatisfied">Very Dissatisfied</label>
+          </div>
+          <br>
+          <label for="radio">How would you rate the timeliness of our response to your complaint/support request?</label>
+          <div>
+            <input class="radio-inline red" type="radio" name="2" value="Excellent">Excellent</label>
+            <input class="radio-inline red" type="radio" name="2" value="Good">Good</label>
+            <input class="radio-inline" type="radio"  name="2" value="Fair">Fair</label>
+            <input class="radio-inline" type="radio"  name="2" value="Poor">Poor</label>
+            <input class="radio-inline" type="radio" name="2" value="Very Poor">Very Poor</label>
+          </div>
+          <br>
+          <label for="radio">How would you rate the professionalism and courtesy of our staff during the resolution process?</label>
+          <div>
+            <input class="radio-inline red" type="radio" name="3" value="Excellent">Excellent</label>
+            <input class="radio-inline red" type="radio" name="3" value="Good">Good</label>
+            <input class="radio-inline" type="radio"  name="3" value="Fair">Fair</label>
+            <input class="radio-inline" type="radio"  name="3" value="Poor">Poor</label>
+            <input class="radio-inline" type="radio" name="3" value="Very Poor">Very Poor</label>
+          </div>
+          <br>
+          <label for="radio">Was your issue resolved to your satisfaction?</label>
+          <div>
+            <input class="radio-inline red" type="radio" name="4" value="Yes">Yes</label>
+            <input class="radio-inline red" type="radio" name="4" value="Partially">Partially</label>
+            <input class="radio-inline" type="radio"  name="4" value="No">No</label>
+          </div>
+          <br>
+          <label for="radio">How clear and helpful was the communication provided to you during the resolution process?</label>
+          <div>
+            <input class="radio-inline red" type="radio" name="5" value="Very Clear and Helpful">Very Clear and Helpful</label>
+            <input class="radio-inline red" type="radio" name="5" value="Clear and Helpful">Clear and Helpful</label>
+            <input class="radio-inline red" type="radio" name="5" value="Somewhat Clear">Somewhat Clear</label>
+            <input class="radio-inline" type="radio"  name="5" value="Not Clear">Not Clear</label>
+            <input class="radio-inline" type="radio" name="5" value="Not Helpful at All">Not Helpful at All</label>
+          </div>
+          <br>
+          <div>
+            <lable>Is there anything we could have done differently to improve your experience?</lable>
+            <textarea rows="4" cols="80" id="textarea"></textarea>
+          </div>
+          <br>
+          <label for="radio">Would you recommend our company to others based on your experience?</label>
+          <div>
+            <input class="radio-inline red" type="radio" name="6" value="Definitely">Definitely</label>
+            <input class="radio-inline red" type="radio" name="6" value="Probably">Probably</label>
+            <input class="radio-inline" type="radio"  name="6" value="Not Sure">Not Sure</label>
+            <input class="radio-inline" type="radio"  name="6" value="Probably Not">Probably Not</label>
+            <input class="radio-inline" type="radio" name="6" value="Definitely Not">Definitely Not</label>
+          </div>
+          <br>
+          <div id="textarea">
+            <lable>Do you have any additional comments or suggestions for us?</lable>
+            <textarea rows="4" cols="80" id="textarea2"></textarea>
+          </div>
+          <button value="Submit" class="btn-success" id="submit" onclick="func()">Submit</button>
+        </form>
+      </div>
+    </div>
+</div>
+
+
+<script src="../../dist/rapidomize-browser.js"></script>
+<script>
+/* initialize a the library with appId and token */
+rapidomize.init('26506712-8f3f-4c54-8b2a-a4e557979c00', 'AAAAELDy2wZg3HAm794Vd8mlRzpThnf-BAXJ1ASljVK3_UuWCWqF_klIEJ6CYwz773eTwWpVceBopN8nT46IR483ZuUSMzTpfP6v5nKvTn5l4WgvBX1W_rQN7A61GeVgGBVxOg==');
+
+/* set a user session information for event tracking */
+rapidomize.setSession('js19700102', 'a');
+
+function getRadioValue(name) {
+    var ele = document.getElementsByName(name);
+    for (i = 0; i < ele.length; i++) {
+        if (ele[i].checked)
+            return ele[i].value;
+    }
+}
+
+/* button click events */
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('submit').addEventListener('click', (e) => {
+        event.stopPropagation()
+        rapidomize.post('form', {
+            'email': document.getElementById("emailadd").value,
+            'satisfaction': getRadioValue("1"),
+            'rate-time': getRadioValue("2"),
+            'rate-prof': getRadioValue("3"),
+            'resolved': getRadioValue("4"),
+            'communication': getRadioValue("5"),
+            'different': document.getElementById("textarea").value,
+            'recommendation': getRadioValue("6"),
+            'comments': document.getElementById("textarea2").value,
+        }, "04896c29-c467-47a9-95bb-6a428d45b478");
+        alert("Thank you for your feedback! Your responses will help us improve our services and ensure a better experience for all our customers.")
+    });
+}, false);
+
+</script>

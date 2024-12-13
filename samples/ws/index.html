@@ -22,6 +22,7 @@
             <button id="register">Register</button>
         </div>
     </div>
+    
 
     <script>
         // Following examples show how to use the js sdk, for triggering ICApps and tracking events for analytics
@@ -81,6 +82,9 @@
             });
 
         }, false);
+
+
+        let ws = webSocket(`wss://${environment.svr}/w/api/v1/mo/1597e967-aece-435d-b679-c293b553fe82?token=${this.jwtToken}`)
     </script>
 </body>
 </html>
